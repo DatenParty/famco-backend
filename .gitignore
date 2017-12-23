@@ -89,7 +89,6 @@ buildNumber.properties
 
 .idea/
 famcoBackend.iml
-pom.xml
 src/main/resources/
 src/test/
 
