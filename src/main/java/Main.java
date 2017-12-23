@@ -1,7 +1,6 @@
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.*;
@@ -17,27 +16,24 @@ import java.util.LinkedHashMap;
 public class Main {
 
     private static DBConnection connection = null;
-    private final boolean testAsJAR = true;
+    private final static HashMap<Integer, Boolean> intToBool = new HashMap<Integer, Boolean>() {{
+        put(0, false);
+        put(1, true);
+    }};
 
     public static void main(String[] args) {
         try {
             connection = new DBConnection();
             new Main();
         } catch (SQLException e) {
-
+            e.printStackTrace();
         }
     }
 
     private Main() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
-            String[] info;
-            if (testAsJAR) {
-                InputStream in = getClass().getResourceAsStream("/password.txt");
-                info = new BufferedReader(new InputStreamReader(in)).lines().toArray(String[]::new);
-            } else
-                info = new String(Files.readAllBytes(Paths.get("res/password.txt"))).split("\n");
-            HttpServer server = HttpServer.create(new InetSocketAddress(testAsJAR ? 1337 : 4200), 0);
+            HttpServer server = HttpServer.create(new InetSocketAddress(1337), 0);
             server.createContext("/", new Handler());
             server.createContext("/login", new LoginHandler());
 
@@ -62,7 +58,6 @@ public class Main {
 
 
     private class LoginHandler implements HttpHandler {
-
         @Override
         public void handle(HttpExchange exchange) {
             try {
@@ -70,18 +65,16 @@ public class Main {
                 HashMap<String, String> userdata = queryToMap(query);
                 String username = userdata.get("username");
                 String password = userdata.get("password");
-                ResultSet resultSet = connection.execute("SELECT * FROM users WHERE email=? AND pwd=?", username, hash(password));
+                ResultSet resultSet = connection.execute("SELECT * FROM users WHERE username=? AND pwd=?", username, hash(password));
                 JSONObject responseObject = new JSONObject();
-                responseObject.put("name", null);
-                responseObject.put("groupId", null);
                 responseObject.put("response", false);
+                responseObject.put("isAdmin", false);
                 if (nullOrEmpty(username) || nullOrEmpty(password)) {
                     write(responseObject.toJSONString(), 401, exchange);
                 } else {
                     while (resultSet.next()) {
-                        responseObject.put("name", resultSet.getString("name"));
-                        responseObject.put("groupId", resultSet.getString("groupId"));
                         responseObject.put("response", true);
+                        responseObject.put("isAdmin", intToBool.get(resultSet.getInt("isAdmin")));
                     }
                     write(responseObject.toJSONString(), 200, exchange);
                 }
@@ -91,7 +84,6 @@ public class Main {
                 write("{\"error\": \"Es wurden nicht alle Felder ausgefüllt.\"}", 400, exchange);
             }
         }
-
     }
 
     private class NewUserHandler implements HttpHandler {
@@ -170,5 +162,12 @@ public class Main {
             e.printStackTrace();
         }
         return "";
+    }
+
+    private static boolean intToBool(int i) {
+        switch (i) {
+            case 1: return true;
+            default: return false;
+        }
     }
 }
