@@ -35,22 +35,23 @@ public class Main {
 
     private Main() {
         try {
+            Utilities.log("starting server");
+    
             HttpServer server = HttpServer.create(new InetSocketAddress(1337), 0);
-
             server.createContext("/", new Handler());
             server.createContext("/login", new LoginHandler());
-
+            server.createContext("/test", new VerificationHandler());
+    
             //server.createContext("/newuser", new NewUserHandler());
 
-            System.out.println("Server wird gestartet...");
             server.setExecutor(null);
             server.start();
-            System.out.println("Server ist betriebsbereit");
+            Utilities.log("server started");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
+    
     private class Handler implements HttpHandler {
 
         @Override
@@ -116,25 +117,48 @@ public class Main {
             }
         }
     }
+    
+    private class VerificationHandler implements HttpHandler {
+    	
+    	@Override
+			public void handle(HttpExchange exchange) {
+    		try {
+					HashMap<String, String> query = queryToMap(exchange.getRequestURI().getQuery());
+					JSONObject responseObject = new JSONObject();
+			
+					boolean verified = verify(query.get("user"), query.get("signature"));
+					responseObject.put("verified", verified);
+					
+					if (verified) {
+						write(responseObject.toJSONString(), 200, exchange);
+					} else {
+						write(responseObject.toJSONString(), 400, exchange);
+					}
+				} catch (Exception e) {
+    			e.printStackTrace();
+				}
+			}
+		}
 
     private boolean verify(String user, String signatureUser) {
-        //Time
-        String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh"));
-
-        //get the Password from database to compare with signature
-        String pwd = null;
-        try {
-            ResultSet set = connection.execute("SELECT pwd FROM users WHERE username = ?", user);
-            pwd = set.getString(0);
-        } catch (SQLException e) {
-            e.getErrorCode();
-        }
-
-        //Create signature with data from Server
-        String signatureServer = hash(user + pwd + time);
-
-        //Verify Signature
-        return signatureUser.equals(signatureServer);
+      	//Time
+      	String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh"));
+	
+      	//get the Password from database to compare with signature
+      	String pwd = null;
+      	try {
+      	    ResultSet set = connection.execute("SELECT pwd FROM users WHERE username = ?", user);
+      	    set.next();
+      	    pwd = set.getString("pwd");
+      	} catch (SQLException e) {
+      	    e.getErrorCode();
+      	}
+	
+      	//Create signature with data from Server
+      	String signatureServer = hash(user + pwd + time);
+	
+      	//Verify Signature
+      	return signatureUser.equals(signatureServer);
     }
 
     private void write(String text, int responseCode, HttpExchange e) {
