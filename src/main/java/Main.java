@@ -8,6 +8,10 @@ import java.net.InetSocketAddress;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.time.Clock;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -31,9 +35,9 @@ public class Main {
     private Main() {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(1337), 0);
+            
             server.createContext("/", new Handler());
             server.createContext("/login", new LoginHandler());
-
             server.createContext("/newuser", new NewUserHandler());
 
             System.out.println("Server wird gestartet...");
@@ -110,6 +114,34 @@ public class Main {
             }
         }
     }
+    
+    private Boolean verify(String user, String signatureUser) {
+			//Time
+			Date date = Calendar.getInstance().getTime();
+			SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy.hh");
+			String time = sdf.format(date);
+			
+			//get the Password from database to compare with signature
+			String pwd = null;
+			try {
+				ResultSet set = connection.execute("SELECT pwd FROM users WHERE username = ?", user);
+				pwd = set.getString(0);
+			} catch (SQLException e) {
+				e.getErrorCode();
+			}
+			
+			//Create signature with data from Server
+			String signatureServer = hash(user + pwd + time);
+			
+			
+			//Verify Signature
+			boolean verified = false;
+			if (signatureUser.equals(signatureServer)) {
+				verified = true;
+			}
+			
+			return verified;
+		}
 
     private void write(String text, int responseCode, HttpExchange e) {
         try {
