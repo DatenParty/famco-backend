@@ -68,7 +68,7 @@ public class Main {
                 HashMap<String, String> userdata = queryToMap(query);
                 String username = userdata.get("username");
                 String password = userdata.get("password");
-                ResultSet resultSet = connection.execute("SELECT * FROM users WHERE username=? AND pwd=?", username, password);
+                ResultSet resultSet = connection.execute("SELECT * FROM users WHERE username=? AND pwd=?", username, hash(password));
                 JSONObject responseObject = new JSONObject();
                 responseObject.put("response", false);
                 responseObject.put("isAdmin", false);
