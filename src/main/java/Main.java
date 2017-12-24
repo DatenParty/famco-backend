@@ -5,8 +5,6 @@ import org.json.simple.JSONObject;
 
 import java.io.*;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
@@ -32,7 +30,6 @@ public class Main {
 
     private Main() {
         try {
-            Class.forName("com.mysql.jdbc.Driver");
             HttpServer server = HttpServer.create(new InetSocketAddress(1337), 0);
             server.createContext("/", new Handler());
             server.createContext("/login", new LoginHandler());
@@ -43,7 +40,7 @@ public class Main {
             server.setExecutor(null);
             server.start();
             System.out.println("Server ist betriebsbereit");
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
