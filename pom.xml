@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>datenparty.org</groupId>
-    <artifactId>famcoBackend</artifactId>
-    <version>Development</version>
+    <artifactId>famco</artifactId>
+    <version>Dev</version>
 
     <dependencies>
         <!-- https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple -->
