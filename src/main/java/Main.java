@@ -126,7 +126,7 @@ public class Main {
 					HashMap<String, String> query = queryToMap(exchange.getRequestURI().getQuery());
 					JSONObject responseObject = new JSONObject();
 			
-					boolean verified = verify(query.get("user"), query.get("signature"));
+					boolean verified = verify(query.get("signature"));
 					responseObject.put("verified", verified);
 					
 					if (verified) {
@@ -140,25 +140,39 @@ public class Main {
 			}
 		}
 
-    private boolean verify(String user, String signatureUser) {
-      	//Time
-      	String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh"));
+    /*
+    Verification System
+    
+    example verifaction query:
+    	famco.datenparty.org/handler?signature=username:b109f3bbbc244eb82441917ed06d...
+    		required data:
+    			1. username
+    			2. signature
+
+    generate signature:
+    	hash(username + hash(password) + time(dMMyyy.hh))
+    
+    Responses:
+    	true/	authorized:		200 and requested data
+    	false/unauthorized:	401 and no data
+     */
+		private boolean verify(String signature) {
+		
+			String pwd = null;
+			String[] query = signature.split(":");
+			String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh"));
 	
-      	//get the Password from database to compare with signature
-      	String pwd = null;
-      	try {
-      	    ResultSet set = connection.execute("SELECT pwd FROM users WHERE username = ?", user);
-      	    set.next();
-      	    pwd = set.getString("pwd");
-      	} catch (SQLException e) {
-      	    e.getErrorCode();
-      	}
+      try {
+          ResultSet set = connection.execute("SELECT pwd FROM users WHERE username = ?", query[0]);
+          set.next();
+          pwd = set.getString("pwd");
+      } catch (SQLException e) {
+          e.getErrorCode();
+      }
 	
-      	//Create signature with data from Server
-      	String signatureServer = hash(user + pwd + time);
-	
-      	//Verify Signature
-      	return signatureUser.equals(signatureServer);
+      //Comparing the signature generated from the server with the signature from the query
+      String signatureServer = hash(query[0] + pwd + time);
+      return signature.equals(signatureServer);
     }
 
     private void write(String text, int responseCode, HttpExchange e) {
