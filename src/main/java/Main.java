@@ -3,15 +3,16 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.json.simple.JSONObject;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.*;
-import java.text.SimpleDateFormat;
-import java.time.Clock;
-import java.util.Calendar;
-import java.util.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
@@ -35,10 +36,11 @@ public class Main {
     private Main() {
         try {
             HttpServer server = HttpServer.create(new InetSocketAddress(1337), 0);
-            
+
             server.createContext("/", new Handler());
             server.createContext("/login", new LoginHandler());
-            server.createContext("/newuser", new NewUserHandler());
+
+            //server.createContext("/newuser", new NewUserHandler());
 
             System.out.println("Server wird gestartet...");
             server.setExecutor(null);
@@ -66,7 +68,7 @@ public class Main {
                 HashMap<String, String> userdata = queryToMap(query);
                 String username = userdata.get("username");
                 String password = userdata.get("password");
-                ResultSet resultSet = connection.execute("SELECT * FROM users WHERE username=? AND pwd=?", username, hash(password));
+                ResultSet resultSet = connection.execute("SELECT * FROM users WHERE username=? AND pwd=?", username, password);
                 JSONObject responseObject = new JSONObject();
                 responseObject.put("response", false);
                 responseObject.put("isAdmin", false);
@@ -114,34 +116,26 @@ public class Main {
             }
         }
     }
-    
-    private Boolean verify(String user, String signatureUser) {
-			//Time
-			Date date = Calendar.getInstance().getTime();
-			SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy.hh");
-			String time = sdf.format(date);
-			
-			//get the Password from database to compare with signature
-			String pwd = null;
-			try {
-				ResultSet set = connection.execute("SELECT pwd FROM users WHERE username = ?", user);
-				pwd = set.getString(0);
-			} catch (SQLException e) {
-				e.getErrorCode();
-			}
-			
-			//Create signature with data from Server
-			String signatureServer = hash(user + pwd + time);
-			
-			
-			//Verify Signature
-			boolean verified = false;
-			if (signatureUser.equals(signatureServer)) {
-				verified = true;
-			}
-			
-			return verified;
-		}
+
+    private boolean verify(String user, String signatureUser) {
+        //Time
+        String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh"));
+
+        //get the Password from database to compare with signature
+        String pwd = null;
+        try {
+            ResultSet set = connection.execute("SELECT pwd FROM users WHERE username = ?", user);
+            pwd = set.getString(0);
+        } catch (SQLException e) {
+            e.getErrorCode();
+        }
+
+        //Create signature with data from Server
+        String signatureServer = hash(user + pwd + time);
+
+        //Verify Signature
+        return signatureUser.equals(signatureServer);
+    }
 
     private void write(String text, int responseCode, HttpExchange e) {
         try {
@@ -195,8 +189,10 @@ public class Main {
 
     private static boolean intToBool(int i) {
         switch (i) {
-            case 1: return true;
-            default: return false;
+            case 1:
+                return true;
+            default:
+                return false;
         }
     }
 }
