@@ -91,4 +91,6 @@ buildNumber.properties
 famcoBackend.iml
 src/main/resources/
 src/test/
+
+### Secret.
 src/main/java/DBConnection.java

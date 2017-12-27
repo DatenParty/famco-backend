@@ -73,4 +73,8 @@ public class Utilities {
         }
         return "";
     }
+    
+    static String generateSignature(String username, String password) {
+        return hash(username + hash(password) + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh")));
+    }
 }

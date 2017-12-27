@@ -115,20 +115,23 @@ public class Main {
     }
     
     private class VerificationHandler implements HttpHandler {
+        /*
+        Example for the implementation of the authorizer (verify(query)) in a Httphandler
+         */
     	
     	@Override
 			public void handle(HttpExchange exchange) {
     		try {
+    		    //converting query to map wih "Utilities.queryToMap"
 					HashMap<String, String> query = Utilities.queryToMap(exchange.getRequestURI().getQuery());
-					JSONObject responseObject = new JSONObject();
 			
-					boolean verified = verify(query.get("signature"));
-					responseObject.put("verified", verified);
-					
-					if (verified) {
-						Utilities.write(responseObject.toJSONString(), 200, exchange);
+					/*
+					  Basicly everything you have to do is calling the verify methode with the httpexchange-query
+					 */
+					if (verify(query)) {
+						Utilities.write("{\"code\": 200}", 200, exchange);
 					} else {
-						Utilities.write(responseObject.toJSONString(), 400, exchange);
+						Utilities.write("{\"code\": 401}", 401, exchange);
 					}
 				} catch (Exception e) {
     			e.printStackTrace();
@@ -152,14 +155,16 @@ public class Main {
     	true/	authorized:		200 and requested data
     	false/unauthorized:	401 and no data
      */
-		private boolean verify(String signature) {
+		private boolean verify(HashMap<String, String> query) {
 		
 			String pwd = null;
-			String[] query = signature.split(":");
+			String[] signature = query.get("signature").split(":");
+			  //signature[0] = username
+        //signature[1] = signature
 			String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh"));
 	
       try {
-          ResultSet set = Utilities.connection.execute("SELECT pwd FROM users WHERE username = ?", query[0]);
+          ResultSet set = Utilities.connection.execute("SELECT pwd FROM users WHERE username = ?", signature[0]);
           set.next();
           pwd = set.getString("pwd");
       } catch (SQLException e) {
@@ -167,7 +172,9 @@ public class Main {
       }
 	
       //Comparing the signature generated from the server with the signature from the query
-      String signatureServer = Utilities.hash(query[0] + pwd + time);
-      return signature.equals(signatureServer);
+      String signatureServer = Utilities.hash(signature[0] + pwd + time);
+      return signature[1].equals(signatureServer);
     }
+    
+    
 }
