@@ -18,15 +18,11 @@ import java.util.LinkedHashMap;
 
 public class Main {
 
-    private static DBConnection connection = null;
-    private final static HashMap<Integer, Boolean> intToBool = new HashMap<Integer, Boolean>() {{
-        put(0, false);
-        put(1, true);
-    }};
+    
 
     public static void main(String[] args) {
         try {
-            connection = new DBConnection();
+            Utilities.connection = new DBConnection();
             new Main();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -56,7 +52,7 @@ public class Main {
 
         @Override
         public void handle(HttpExchange exchange) {
-            write("{\"response\": \"Wohoo!\"}", 200, exchange);
+            Utilities.write("{\"response\": \"Wohoo!\"}", 200, exchange);
         }
     }
 
@@ -66,26 +62,26 @@ public class Main {
         public void handle(HttpExchange exchange) {
             try {
                 String query = exchange.getRequestURI().getQuery();
-                HashMap<String, String> userdata = queryToMap(query);
+                HashMap<String, String> userdata = Utilities.queryToMap(query);
                 String username = userdata.get("username");
                 String password = userdata.get("password");
-                ResultSet resultSet = connection.execute("SELECT * FROM users WHERE username=? AND pwd=?", username, hash(password));
+                ResultSet resultSet = Utilities.connection.execute("SELECT * FROM users WHERE username=? AND pwd=?", username, Utilities.hash(password));
                 JSONObject responseObject = new JSONObject();
                 responseObject.put("response", false);
                 responseObject.put("isAdmin", false);
-                if (nullOrEmpty(username) || nullOrEmpty(password)) {
-                    write(responseObject.toJSONString(), 401, exchange);
+                if (Utilities.nullOrEmpty(username) || Utilities.nullOrEmpty(password)) {
+                    Utilities.write(responseObject.toJSONString(), 401, exchange);
                 } else {
                     while (resultSet.next()) {
                         responseObject.put("response", true);
-                        responseObject.put("isAdmin", intToBool.get(resultSet.getInt("isAdmin")));
+                        responseObject.put("isAdmin", Utilities.intToBool.get(resultSet.getInt("isAdmin")));
                     }
-                    write(responseObject.toJSONString(), 200, exchange);
+                    Utilities.write(responseObject.toJSONString(), 200, exchange);
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
             } catch (NullPointerException e) {
-                write("{\"error\": \"Es wurden nicht alle Felder ausgefüllt.\"}", 400, exchange);
+                Utilities.write("{\"error\": \"Es wurden nicht alle Felder ausgefüllt.\"}", 400, exchange);
             }
         }
     }
@@ -96,24 +92,24 @@ public class Main {
         public void handle(HttpExchange exchange) {
             try {
                 String query = exchange.getRequestURI().getQuery();
-                HashMap<String, String> map = queryToMap(query);
-                ResultSet set = connection.execute("SELECT email FROM users WHERE email = ?", map.get("email"));
+                HashMap<String, String> map = Utilities.queryToMap(query);
+                ResultSet set = Utilities.connection.execute("SELECT email FROM users WHERE email = ?", map.get("email"));
 
                 String name = map.get("name");
                 name = name.replace('+', ' ');
                 String password = map.get("password");
                 String group = map.get("groupId");
                 String email = map.get("email");
-                if (exists(set)) {
-                    write("{\"error\": \"Dieser Benutzer ist schon vorhanden\"}", 401, exchange);
-                } else if (nullOrEmpty(name) || nullOrEmpty(password) || nullOrEmpty(group) || nullOrEmpty(email) || map.isEmpty()) {
-                    write("{\"error\": \"Es wurden nicht alle Felder ausgefüllt\"}", 400, exchange);
+                if (Utilities.exists(set)) {
+                    Utilities.write("{\"error\": \"Dieser Benutzer ist schon vorhanden\"}", 401, exchange);
+                } else if (Utilities.nullOrEmpty(name) || Utilities.nullOrEmpty(password) || Utilities.nullOrEmpty(group) || Utilities.nullOrEmpty(email) || map.isEmpty()) {
+                    Utilities.write("{\"error\": \"Es wurden nicht alle Felder ausgefüllt\"}", 400, exchange);
                 } else {
-                    connection.update("INSERT INTO users VALUES (DEFAULT, ?, ?, ?, ?)", name, password, group, email);
-                    write("{\"result\": \"Der Benutzer mit der E-Mail-Adresse " + map.get("email") + " wird erstellt\", \"response\": true}", 201, exchange);
+                    Utilities.connection.update("INSERT INTO users VALUES (DEFAULT, ?, ?, ?, ?)", name, password, group, email);
+                    Utilities.write("{\"result\": \"Der Benutzer mit der E-Mail-Adresse " + map.get("email") + " wird erstellt\", \"response\": true}", 201, exchange);
                 }
             } catch (NullPointerException e) {
-                write("{\"error\": \"Es wurden nicht alle Felder ausgefüllt\"}", 400, exchange);
+                Utilities.write("{\"error\": \"Es wurden nicht alle Felder ausgefüllt\"}", 400, exchange);
             }
         }
     }
@@ -123,16 +119,16 @@ public class Main {
     	@Override
 			public void handle(HttpExchange exchange) {
     		try {
-					HashMap<String, String> query = queryToMap(exchange.getRequestURI().getQuery());
+					HashMap<String, String> query = Utilities.queryToMap(exchange.getRequestURI().getQuery());
 					JSONObject responseObject = new JSONObject();
 			
 					boolean verified = verify(query.get("signature"));
 					responseObject.put("verified", verified);
 					
 					if (verified) {
-						write(responseObject.toJSONString(), 200, exchange);
+						Utilities.write(responseObject.toJSONString(), 200, exchange);
 					} else {
-						write(responseObject.toJSONString(), 400, exchange);
+						Utilities.write(responseObject.toJSONString(), 400, exchange);
 					}
 				} catch (Exception e) {
     			e.printStackTrace();
@@ -163,7 +159,7 @@ public class Main {
 			String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh"));
 	
       try {
-          ResultSet set = connection.execute("SELECT pwd FROM users WHERE username = ?", query[0]);
+          ResultSet set = Utilities.connection.execute("SELECT pwd FROM users WHERE username = ?", query[0]);
           set.next();
           pwd = set.getString("pwd");
       } catch (SQLException e) {
@@ -171,66 +167,7 @@ public class Main {
       }
 	
       //Comparing the signature generated from the server with the signature from the query
-      String signatureServer = hash(query[0] + pwd + time);
+      String signatureServer = Utilities.hash(query[0] + pwd + time);
       return signature.equals(signatureServer);
-    }
-
-    private void write(String text, int responseCode, HttpExchange e) {
-        try {
-            e.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
-            e.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            e.sendResponseHeaders(responseCode, 0);
-            OutputStream os = e.getResponseBody();
-            os.write(text.getBytes("UTF-8"));
-            os.close();
-        } catch (IOException exception) {
-            exception.printStackTrace();
-        }
-    }
-
-    private HashMap<String, String> queryToMap(String s) {
-        LinkedHashMap<String, String> map = new LinkedHashMap<>();
-        String[] e = s.split("&");
-        for (String el : e) {
-            map.put(el.substring(0, el.indexOf("=")), el.substring(el.indexOf("=") + 1));
-        }
-        return map;
-    }
-
-    private boolean exists(ResultSet set) {
-        try {
-            return set.next();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private boolean nullOrEmpty(String string) {
-        return string == null || string.equals("");
-    }
-
-    private String hash(String text) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-512");
-            byte[] array = digest.digest(text.getBytes("UTF-8"));
-
-            StringBuilder buffer = new StringBuilder();
-            for (byte anArray : array)
-                buffer.append(Integer.toString((anArray & 0xff) + 0x100, 16).substring(1));
-            return buffer.toString();
-        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
-
-    private static boolean intToBool(int i) {
-        switch (i) {
-            case 1:
-                return true;
-            default:
-                return false;
-        }
     }
 }
