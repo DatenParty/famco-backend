@@ -36,10 +36,14 @@ public class Utilities {
             exception.printStackTrace();
         }
     }
-
-    static HashMap<String, String> queryToMap(String s) {
+	
+	/**
+	 * @param query
+	 * @return map
+	 */
+    static HashMap<String, String> queryToMap(String query) {
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
-        String[] e = s.split("&");
+        String[] e = query.split("&");
         for (String el : e) {
             map.put(el.substring(0, el.indexOf("=")), el.substring(el.indexOf("=") + 1));
         }

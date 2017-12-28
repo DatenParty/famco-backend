@@ -31,7 +31,7 @@ public class Main {
             HttpServer server = HttpServer.create(new InetSocketAddress(1337), 0);
             server.createContext("/", new Handler());
             server.createContext("/login", new LoginHandler());
-            server.createContext("/test", new VerificationHandler());
+            server.createContext("/verify", new VerificationHandler());
     
             //server.createContext("/newuser", new NewUserHandler());
 
@@ -138,7 +138,7 @@ public class Main {
 			}
 		}
 
-    /*
+    /**
     Verification System
     
     example verifaction query:
