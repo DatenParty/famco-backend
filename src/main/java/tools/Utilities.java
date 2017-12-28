@@ -15,14 +15,14 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class Utilities {
-    
-    static public DBConnection connection = null;
+
+    public static DBConnection connection = null;
     static public final HashMap<Integer, Boolean> intToBool = new HashMap<Integer, Boolean>() {{
         put(0, false);
         put(1, true);
     }};
 
-    static public void log(String text) {
+    public static void log(String text) {
         System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + " > " + text);
     }
 
@@ -43,7 +43,7 @@ public class Utilities {
 	 * @param query
 	 * @return map
 	 */
-    static public HashMap<String, String> queryToMap(String query) {
+    public static  HashMap<String, String> queryToMap(String query) {
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
         String[] e = query.split("&");
         for (String el : e) {
@@ -52,7 +52,7 @@ public class Utilities {
         return map;
     }
 
-    static public boolean exists(ResultSet set) {
+    public static boolean exists(ResultSet set) {
         try {
             return set.next();
         } catch (SQLException e) {
@@ -61,24 +61,18 @@ public class Utilities {
         }
     }
 
-    static public boolean nullOrEmpty(String string) {
+    public static boolean nullOrEmpty(String string) {
         return string == null || string.equals("");
     }
-    
-    static public boolean nullOrEmpty(String ... strings) {
-        boolean response = false;
-        
-        for (int i = 0; i < strings.length; i++) {
-            if (strings[i] == null || strings[i].equals("")) {
-                response = true;
-                break;
-            }
+
+    public static boolean nullOrEmpty(String ... strings) {
+        for (String string : strings) {
+            if (string == null || string.equals("")) return true;
         }
-        
-        return response;
+        return false;
     }
 
-    static public String hash(String text) {
+    public static String hash(String text) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-512");
             byte[] array = digest.digest(text.getBytes("UTF-8"));
@@ -92,8 +86,8 @@ public class Utilities {
         }
         return "";
     }
-    
-    static public String generateSignature(String username, String password) {
+
+    public static String generateSignature(String username, String password) {
         return hash(username + hash(password) + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh")));
     }
     
@@ -113,7 +107,7 @@ public class Utilities {
      true/	authorized:		200 and requested data
      false/unauthorized:	401 and no data
      */
-    static public boolean verify(HashMap<String, String> query) {
+    public static boolean verify(HashMap<String, String> query) {
         
         String pwd = null;
         String[] signature = query.get("signature").split(":");

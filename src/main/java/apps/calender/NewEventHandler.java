@@ -9,7 +9,7 @@ import java.util.HashMap;
 
 import static tools.Utilities.verify;
 
-public class newEventHandler implements HttpHandler {
+public class NewEventHandler implements HttpHandler {
 	
 	
 	/**
