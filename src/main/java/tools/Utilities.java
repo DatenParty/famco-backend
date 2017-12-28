@@ -38,7 +38,11 @@ public class Utilities {
             exception.printStackTrace();
         }
     }
-	
+
+    static public void unauthorized(HttpExchange e) {
+        write("{\"code\": 401}", 401, e);
+    }
+
 	/**
 	 * @param query
 	 * @return map

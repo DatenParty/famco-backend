@@ -16,9 +16,9 @@ public class NewEventHandler implements HttpHandler {
 	 * @param exchange
 	 *
 	 * Query:
-	 * 		Signature*
-	 * 		Title*
-	 * 		Date*
+	 * 		*signature=...
+	 * 		*title=...
+	 * 		*date=YYYY-MM-DD
 	 *
 	 * 		createdBy
 	 * 		assignedFamilyMembers
@@ -49,8 +49,7 @@ public class NewEventHandler implements HttpHandler {
 				Utilities.write("{\"result\": \"Das Event " + title + " wird erstellt\", \"response\": true}", 201, exchange);
 			}
 		} else {
-			Utilities.write("{\"code\": 401}", 401, exchange);
-			Utilities.log("Unauthorized request by: " + exchange.getRemoteAddress());
+			Utilities.unauthorized(exchange);
 		}
 	}
 }

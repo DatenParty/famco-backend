@@ -1,4 +1,5 @@
 import apps.calender.NewEventHandler;
+import apps.calender.newEventHandler;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -37,8 +38,8 @@ public class Main {
             server.createContext("/login", new LoginHandler());
             server.createContext("/verify", new VerificationHandler());
             server.createContext("/newEvent", new NewEventHandler());
-    
-            //server.createContext("/newuser", new NewUserHandler());
+
+            //server.createContext("/new/user", new NewUserHandler());
 
             server.setExecutor(null);
             server.start();
