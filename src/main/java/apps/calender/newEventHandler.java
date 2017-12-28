@@ -48,6 +48,9 @@ public class newEventHandler implements HttpHandler {
 				Utilities.connection.update("INSERT INTO `app:calender` VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?)", title, date, comment, location, time, createdBy, assigned);
 				Utilities.write("{\"result\": \"Das Event " + title + " wird erstellt\", \"response\": true}", 201, exchange);
 			}
+		} else {
+			Utilities.write("{\"code\": 401}", 401, exchange);
+			Utilities.log("Unauthorized request by: " + exchange.getRemoteAddress());
 		}
 	}
 }
