@@ -38,7 +38,6 @@ public class Main {
             server.createContext("/login", new LoginHandler());
             server.createContext("/verify", new VerificationHandler());
             server.createContext("/new/event", new newEventHandler());
-            server.createContext("/get/events", new getEventsHandler());
     
             //server.createContext("/new/user", new NewUserHandler());
 
