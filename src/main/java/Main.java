@@ -1,15 +1,19 @@
+import apps.calender.newEventHandler;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.json.simple.JSONObject;
+import tools.DBConnection;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+
+import tools.Utilities;
+
+import static tools.Utilities.verify;
 
 public class Main {
 
@@ -32,6 +36,7 @@ public class Main {
             server.createContext("/", new Handler());
             server.createContext("/login", new LoginHandler());
             server.createContext("/verify", new VerificationHandler());
+            server.createContext("/newEvent", new newEventHandler());
     
             //server.createContext("/newuser", new NewUserHandler());
 
@@ -96,7 +101,7 @@ public class Main {
                 String group = map.get("groupId");
                 String email = map.get("email");
                 if (Utilities.exists(set)) {
-                    Utilities.write("{\"error\": \"Dieser Benutzer ist schon vorhanden\"}", 401, exchange);
+                    Utilities.write("{\"error\": \"Dieser Benutzer ist schon vorhanden\"}", 409, exchange);
                 } else if (Utilities.nullOrEmpty(name) || Utilities.nullOrEmpty(password) || Utilities.nullOrEmpty(group) || Utilities.nullOrEmpty(email) || map.isEmpty()) {
                     Utilities.write("{\"error\": \"Es wurden nicht alle Felder ausgefüllt\"}", 400, exchange);
                 } else {
@@ -137,43 +142,4 @@ public class Main {
 				}
 			}
 		}
-
-    /**
-    Verification System
-    
-    example verifaction query:
-    	famco.datenparty.org/handler?signature=username:b109f3bbbc244eb82441917ed06d...
-    		required data:
-    			1. username
-    			2. signature
-
-    generate signature:
-    	hash(username + hash(password) + time(dMMyyy.hh))
-    
-    Responses:
-    	true/	authorized:		200 and requested data
-    	false/unauthorized:	401 and no data
-     */
-		private boolean verify(HashMap<String, String> query) {
-		
-			String pwd = null;
-			String[] signature = query.get("signature").split(":");
-			  //signature[0] = username
-        //signature[1] = signature
-			String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh"));
-	
-      try {
-          ResultSet set = Utilities.connection.execute("SELECT pwd FROM users WHERE username = ?", signature[0]);
-          set.next();
-          pwd = set.getString("pwd");
-      } catch (SQLException e) {
-          e.getErrorCode();
-      }
-	
-      //Comparing the signature generated from the server with the signature from the query
-      String signatureServer = Utilities.hash(signature[0] + pwd + time);
-      return signature[1].equals(signatureServer);
-    }
-    
-    
 }

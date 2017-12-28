@@ -1,3 +1,5 @@
+package tools;
+
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
@@ -13,18 +15,18 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 public class Utilities {
-
-    static DBConnection connection = null;
-    static final HashMap<Integer, Boolean> intToBool = new HashMap<Integer, Boolean>() {{
+    
+    static public DBConnection connection = null;
+    static public final HashMap<Integer, Boolean> intToBool = new HashMap<Integer, Boolean>() {{
         put(0, false);
         put(1, true);
     }};
 
-    static void log(String text) {
+    static public void log(String text) {
         System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + " > " + text);
     }
 
-    static void write(String text, int responseCode, HttpExchange e) {
+    static public void write(String text, int responseCode, HttpExchange e) {
         try {
             e.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
             e.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
@@ -41,7 +43,7 @@ public class Utilities {
 	 * @param query
 	 * @return map
 	 */
-    static HashMap<String, String> queryToMap(String query) {
+    static public HashMap<String, String> queryToMap(String query) {
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
         String[] e = query.split("&");
         for (String el : e) {
@@ -50,7 +52,7 @@ public class Utilities {
         return map;
     }
 
-    static boolean exists(ResultSet set) {
+    static public boolean exists(ResultSet set) {
         try {
             return set.next();
         } catch (SQLException e) {
@@ -59,11 +61,24 @@ public class Utilities {
         }
     }
 
-    static boolean nullOrEmpty(String string) {
+    static public boolean nullOrEmpty(String string) {
         return string == null || string.equals("");
     }
+    
+    static public boolean nullOrEmpty(String ... strings) {
+        boolean response = false;
+        
+        for (int i = 0; i < strings.length; i++) {
+            if (strings[i] == null || strings[i].equals("")) {
+                response = true;
+                break;
+            }
+        }
+        
+        return response;
+    }
 
-    static String hash(String text) {
+    static public String hash(String text) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-512");
             byte[] array = digest.digest(text.getBytes("UTF-8"));
@@ -78,7 +93,44 @@ public class Utilities {
         return "";
     }
     
-    static String generateSignature(String username, String password) {
+    static public String generateSignature(String username, String password) {
         return hash(username + hash(password) + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh")));
+    }
+    
+    /**
+     Verification System
+     
+     example verifaction query:
+     famco.datenparty.org/handler?signature=username:b109f3bbbc244eb82441917ed06d...
+     required data:
+     1. username
+     2. signature
+     
+     generate signature:
+     hash(username + hash(password) + time(dMMyyy.hh))
+     
+     Responses:
+     true/	authorized:		200 and requested data
+     false/unauthorized:	401 and no data
+     */
+    static public boolean verify(HashMap<String, String> query) {
+        
+        String pwd = null;
+        String[] signature = query.get("signature").split(":");
+        //signature[0] = username
+        //signature[1] = signature
+        String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dMMyyy.hh"));
+        
+        try {
+            ResultSet set = Utilities.connection.execute("SELECT pwd FROM users WHERE username = ?", signature[0]);
+            set.next();
+            pwd = set.getString("pwd");
+        } catch (SQLException e) {
+            e.getErrorCode();
+        }
+        
+        //Comparing the signature generated from the server with the signature from the query
+        String signatureServer = Utilities.hash(signature[0] + pwd + time);
+        return signature[1].equals(signatureServer);
     }
 }

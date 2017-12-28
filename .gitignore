@@ -94,3 +94,4 @@ src/test/
 
 ### Secret.
 src/main/java/DBConnection.java
+/src/main/java/tools/DBConnection.java
