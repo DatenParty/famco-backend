@@ -23,7 +23,7 @@ public class Utilities {
     }};
 
     static public void log(String text) {
-        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + " > " + text);
+        System.out.println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " > " + text);
     }
 
     static public void write(String text, int responseCode, HttpExchange e) {
@@ -37,6 +37,10 @@ public class Utilities {
         } catch (IOException exception) {
             exception.printStackTrace();
         }
+    }
+    
+    static public void unauthorized(HttpExchange e) {
+        write("{\"code\": 401}", 401, e);
     }
 	
 	/**
@@ -65,7 +69,7 @@ public class Utilities {
         return string == null || string.equals("");
     }
     
-    static public boolean nullOrEmpty(String ... strings) {
+    static public boolean nullOrEmpty(String... strings) {
         boolean response = false;
         
         for (int i = 0; i < strings.length; i++) {
