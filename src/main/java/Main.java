@@ -4,17 +4,12 @@ import com.sun.net.httpserver.HttpServer;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 
 public class Main {
 
@@ -124,17 +119,21 @@ public class Main {
     		try {
     		    //converting query to map wih "Utilities.queryToMap"
 					HashMap<String, String> query = Utilities.queryToMap(exchange.getRequestURI().getQuery());
-			
+					
 					/*
 					  Basicly everything you have to do is calling the verify methode with the httpexchange-query
 					 */
 					if (verify(query)) {
 						Utilities.write("{\"code\": 200}", 200, exchange);
-					} else {
+						Utilities.log("Authorized request by: " + exchange.getRemoteAddress());
+              
+          } else {
 						Utilities.write("{\"code\": 401}", 401, exchange);
+						Utilities.log("Unauthorized request by: " + exchange.getRemoteAddress());
 					}
-				} catch (Exception e) {
-    			e.printStackTrace();
+				} catch (ArrayIndexOutOfBoundsException e) {
+    			Utilities.write("{\"code\": 400)", 400, exchange);
+    			Utilities.log("Malformed request by: " + exchange.getRemoteAddress());
 				}
 			}
 		}
